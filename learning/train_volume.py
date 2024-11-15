@@ -2,7 +2,7 @@ import re
 import subprocess
 from dotenv import load_dotenv
 
-from artifact import load_artifact_path
+from wandb_artifact import load_wandb_artifact_path
 from volume_env import register_volume_env
 
 from ray.rllib.utils.test_utils import add_rllib_example_script_args, run_rllib_example_script_experiment
@@ -119,7 +119,7 @@ def train():
         from_checkpoint = (
             args.from_checkpoint
             if args.from_checkpoint.startswith("/")
-            else load_artifact_path(args.from_checkpoint)
+            else load_wandb_artifact_path(args.from_checkpoint)
         )
         Trainable = get_trainable_cls(args.algo)
         trainable = Trainable(base_config)
