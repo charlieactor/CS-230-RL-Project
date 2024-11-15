@@ -1,7 +1,7 @@
 #!/bin/bash
 # Bash script for easy running of train_volume.py:
 
-poetry run python scripts/learning/train_volume.py \
+poetry run python learning/train_volume.py \
     --env-name "VolumeEnv" \
     --num-env-runners 175 \
     --num-envs-per-env-runner 16 \
