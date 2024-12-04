@@ -2,23 +2,25 @@ import re
 import subprocess
 from dotenv import load_dotenv
 
-from wandb_artifact import load_wandb_artifact_path
+from artifact import load_artifact_path
 from volume_env import register_volume_env
 
-from ray.rllib.utils.test_utils import add_rllib_example_script_args, run_rllib_example_script_experiment
 from ray.rllib.models import ModelCatalog
-from ray.rllib.models.tf import FullyConnectedNetwork
+from ray.rllib.utils.test_utils import add_rllib_example_script_args, run_rllib_example_script_experiment
 from ray import tune
-from ray.tune.registry import get_trainable_cls, register_env
+from ray.tune.registry import get_trainable_cls
 import wandb
 from wandb.apis.public.runs import Run
+
+from volume_env_preprocessor import FlattenGridModel
 
 
 load_dotenv(".env")
 
 register_volume_env()
 
-ModelCatalog.register_custom_model("fully_connected_model", FullyConnectedNetwork)
+# Register the custom model
+# ModelCatalog.register_custom_model("flatten_grid_model", FlattenGridModel)
 
 
 def get_last_run(project: str) -> Run:
@@ -91,13 +93,19 @@ def train():
             num_env_runners=args.num_env_runners, num_envs_per_env_runner=args.num_envs_per_env_runner
         )
     )
-    base_config["model"] = {
-        "custom_model": "fully_connected_model",
-    }
+    # TODO: works for DQN
+    # base_config["model"] = {
+    #     "custom_model": "flatten_grid_model",  # Use the custom model
+    # }
 
     args.num_env_runners = (
         None  # must set to None so run_rllib_example_script_experiment doesn't override env_runners
     )
+
+    base_config["stop"] = {
+        "timesteps_total": args.stop_timesteps,  # Stop after this many timesteps
+        "reward_1": args.stop_reward,  # Stop if reward reaches this value
+    }
 
     base_config["exploration_config"] = {
         "type": "EpsilonGreedy",
@@ -105,10 +113,10 @@ def train():
         "final_epsilon": 0.001,
         "warmup_timesteps": args.stop_timesteps * 0.2,
         "epsilon_timesteps": args.stop_timesteps * 0.8,
-        "explore": True,
-        "train_batch_size": args.train_batch_size,
     }
 
+    base_config["explore"] = True
+    base_config["train_batch_size"] = args.train_batch_size
     if args.lr_end:
         base_config["lr_schedule"] = [(0, args.lr), (args.stop_timesteps, args.lr_end)]
     else:
@@ -119,7 +127,7 @@ def train():
         from_checkpoint = (
             args.from_checkpoint
             if args.from_checkpoint.startswith("/")
-            else load_wandb_artifact_path(args.from_checkpoint)
+            else load_artifact_path(args.from_checkpoint)
         )
         Trainable = get_trainable_cls(args.algo)
         trainable = Trainable(base_config)
@@ -128,10 +136,6 @@ def train():
     results: tune.ResultGrid = run_rllib_example_script_experiment(
         base_config, args, trainable=trainable
     )  # type: ignore
-
-    print(f"Experiment finished. Artifact uploaded to W&B Project {project}")
-    print("\n\n\n****Best result****\n\n\n")
-    print(results.get_best_result())
 
 
 if __name__ == "__main__":
