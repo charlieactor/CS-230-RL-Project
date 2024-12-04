@@ -4,11 +4,13 @@ import numpy as np
 
 if __name__ == "__main__":
     # Data for Old Search Algorithm
+    # Taken from scenario runner outputs over 10 runs
     old_search_moves = [672, 776, 692.0, 750.8]
     old_search_z_moves = [50, 76, 56.0, 75.1]
     old_search_picks_drops = [190, 228, 202.0, 222.6]
 
     # Data for RL Model
+    # Taken from scenario runner outputs over 10 runs
     rl_moves = [443, 527, 476.0, 521.15]
     rl_z_moves = [25, 54, 32.0, 53.55]
     rl_picks_drops = [102, 150, 121.0, 140.1]
